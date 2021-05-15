@@ -21,9 +21,31 @@ public class PlacementManager : MonoBehaviour
 		return placementGrid.GetAllAdjacentCellTypes(position.x, position.z);	
 	}
 
-	internal void PlaceObjectOnTheMap(Vector3Int pos, GameObject prefab, CellType structure)
+	internal void PlaceObjectOnTheMap(Vector3Int pos, GameObject structurePrefab, CellType type, int width = 1, int height = 1)
 	{
-		throw new NotImplementedException();
+		StructureModel structure = CreateNewStructureModel(pos, structurePrefab, type);     // create a game object with structureModel and a structure VFX
+		for (int x = 0; x < width; x++)
+		{
+			for (int z = 0; z < height; z++)
+			{
+				var newPos = pos + new Vector3Int(x, 0, z);
+				placementGrid[newPos.x, newPos.z] = type;                                                 // add it to the road list in Grid
+				structureDictionary.Add(newPos, structure);
+				DestroyNatureAt(newPos);
+			}
+		}
+
+
+	}
+
+	private void DestroyNatureAt(Vector3Int pos)		// destroy all trees in this pos
+	{
+		RaycastHit[] hits = Physics.BoxCastAll(pos + new Vector3(0, 0.5f, 0), new Vector3(0.5f, 0.5f, 0.5f),
+			transform.up, Quaternion.identity, 1f, 1 << LayerMask.NameToLayer("Nature"));
+		foreach (var item in hits)
+		{
+			Destroy(item.collider.gameObject);
+		}
 	}
 
 	internal bool CheckPosInBound(Vector3Int pos)
@@ -100,6 +122,7 @@ public class PlacementManager : MonoBehaviour
 		foreach (var structure in tempRoadObjects)
 		{
 			structureDictionary.Add(structure.Key, structure.Value);
+			DestroyNatureAt(structure.Key);
 		}
 
 		tempRoadObjects.Clear();
